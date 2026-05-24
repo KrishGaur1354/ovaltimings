@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OvalTiming Live - IndyCar Streamer Dashboard & Telemetry TTS</title>
+  <meta name="description" content="Stream-ready live telemetry timing and scoring dashboard for IndyCar, featuring real-time Text-to-Speech commentary alerts. Optimized for OBS overlays and watch-alongs.">
+  <!-- Google Fonts: Rajdhani for racing digital displays, Inter for clear UI text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="flag-green-bg">
+
+  <!-- Main Application Wrapper -->
+  <div id="app-container" class="dashboard-grid">
+    
+    <!-- HEADER BAR: Session Metadata & Lights -->
+    <header class="header-panel" id="main-header">
+      <div class="brand-group">
+        <button id="btn-toggle-sidebar" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse Sidebar">◀</button>
+        <div class="logo-accent">🏁</div>
+        <div>
+          <h1 id="app-title">OVALTIMING LIVE</h1>
+          <p id="session-name-display" class="telemetry-text">CONNECTING TO TIMING SERVICE...</p>
+        </div>
+      </div>
+      
+      <!-- Flag Status Box -->
+      <div class="flag-status-box" id="flag-box">
+        <div class="status-light-group">
+          <div class="status-light animate-pulse" id="status-light-left"></div>
+          <div class="flag-label" id="flag-text">TRACK GREEN</div>
+          <div class="status-light animate-pulse" id="status-light-right"></div>
+        </div>
+      </div>
+
+      <!-- Quick Session Widgets -->
+      <div class="session-stats">
+        <div class="stat-widget" id="weather-widget">
+          <span class="widget-label">TRACK WEATHER (IMS)</span>
+          <span class="widget-value telemetry-text" id="weather-display" style="font-size: 15px; color: var(--color-green-flag);">☀️ Loading...</span>
+        </div>
+        <div class="stat-widget">
+          <span class="widget-label">LAP</span>
+          <span class="widget-value telemetry-text" id="lap-display">0/200</span>
+        </div>
+        <div class="stat-widget">
+          <span class="widget-label">ELAPSED TIME</span>
+          <span class="widget-value telemetry-text" id="time-display">00:00:00</span>
+        </div>
+        <div class="stat-widget">
+          <span class="widget-label">LEAD CHANGES</span>
+          <span class="widget-value telemetry-text" id="lead-changes-display">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- LEFT PANEL: Timing Controls & TTS Speech Configuration -->
+    <aside class="control-panel" id="side-controls">
+      
+      <!-- 1. FEED MODE SELECTION -->
+      <div class="panel-section">
+        <h3>⚡ Telemetry Source</h3>
+        <div class="button-row">
+          <button id="btn-mode-live" class="mode-btn active" onclick="setSourceMode('live')">
+            <span class="btn-dot live-dot"></span> Live IndyCar Feed
+          </button>
+          <button id="btn-mode-sim" class="mode-btn" onclick="setSourceMode('simulated')">
+            <span class="btn-dot sim-dot"></span> Demo Simulator
+          </button>
+        </div>
+        
+        <div id="sim-controls" class="sim-panel-group hidden">
+          <div class="sim-controls-header">Simulator Management</div>
+          <div class="button-row-narrow">
+            <button id="btn-sim-reset" class="action-btn" onclick="resetSimulator()">Restart Race</button>
+            <button id="btn-sim-caution" class="action-btn caution-btn" onclick="triggerSimulatedYellow()">Yellow Flag</button>
+          </div>
+          <p class="section-hint">Simulates a high-fidelity 33-car grid with overtakes, pitstops, and cautional flags.</p>
+        </div>
+      </div>
+
+      <!-- 2. TEXT-TO-SPEECH CONTROLLER -->
+      <div class="panel-section">
+        <div class="section-title-row">
+          <h3>🎙️ Speech Commentary</h3>
+          <label class="switch-container">
+            <input type="checkbox" id="tts-master-enable" checked onchange="toggleTTSMaster()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="tts-options-container">
+          <!-- Voice Selector -->
+          <div class="control-group">
+            <label for="tts-voice-select">Synthesis Voice</label>
+            <select id="tts-voice-select" class="styled-input" onchange="saveTTSPreferences()"></select>
+          </div>
+
+          <!-- Volume and Rate -->
+          <div class="range-group">
+            <div class="slider-row">
+              <label for="tts-volume">Volume</label>
+              <span id="vol-val" class="telemetry-text">100%</span>
+            </div>
+            <input type="range" id="tts-volume" min="0" max="1" step="0.1" value="1" oninput="updateSliderLabel('vol', this.value)">
+          </div>
+
+          <div class="range-group">
+            <div class="slider-row">
+              <label for="tts-rate">Speech Rate (Speed)</label>
+              <span id="rate-val" class="telemetry-text">1.1x</span>
+            </div>
+            <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1.1" oninput="updateSliderLabel('rate', this.value)">
+          </div>
+
+          <!-- Filter Categories -->
+          <div class="filter-toggles">
+            <span class="toggle-group-title">Announce Events:</span>
+            
+            <label class="checkbox-row">
+              <input type="checkbox" id="chk-announce-flags" checked onchange="saveTTSPreferences()">
+              <span class="custom-chk"></span>
+              <span>Caution & Red Flags</span>
+            </label>
+            
+            <label class="checkbox-row">
+              <input type="checkbox" id="chk-announce-leaders" checked onchange="saveTTSPreferences()">
+              <span class="custom-chk"></span>
+              <span>Leader Changes</span>
+            </label>
+            
+            <label class="checkbox-row">
+              <input type="checkbox" id="chk-announce-overtakes" checked onchange="saveTTSPreferences()">
+              <span class="custom-chk"></span>
+              <span>Top-Grid Overtakes</span>
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="chk-announce-fastlap" checked onchange="saveTTSPreferences()">
+              <span class="custom-chk"></span>
+              <span>Overall Fastest Lap</span>
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="chk-announce-pits" checked onchange="saveTTSPreferences()">
+              <span class="custom-chk"></span>
+              <span>Pit Entries</span>
+            </label>
+          </div>
+          
+          <button id="btn-test-speech" class="action-btn outline-btn" onclick="testTTS()">🔊 Test Sound & Speech</button>
+        </div>
+      </div>
+
+      <!-- 3. OBS OVERLAY SETTINGS -->
+      <div class="panel-section">
+        <h3>📺 Streamer Overlay</h3>
+        
+        <label class="checkbox-row" style="margin-bottom: 6px;">
+          <input type="checkbox" id="chk-limit-top20" checked onchange="toggleLimitTop20()">
+          <span class="custom-chk"></span>
+          <span>Limit Board to Top 20 Cars</span>
+        </label>
+
+        <button id="btn-toggle-hud" class="action-btn accent-btn" onclick="toggleHUDMode()">
+          🎥 Toggle OBS Overlay Mode
+        </button>
+        <p class="section-hint">Hides configuration panels and presents a minimalist browser transparent tower. Press <strong>ESCAPE</strong> key at any time to exit overlay mode.</p>
+      </div>
+
+      <!-- 4. DISCLAIMER FOOTER -->
+      <div class="disclaimer-section">
+        <p><strong>UNOFFICIAL FAN UTILITY</strong></p>
+        <p>This community telemetry dashboard is completely non-commercial. All timing trademarks belong to INDYCAR. Stream safely by muting TV feeds.</p>
+      </div>
+    </aside>
+
+    <!-- CENTER PANEL: Real-time Leaderboard -->
+    <main class="leaderboard-panel">
+      <div class="table-container">
+        <table id="leaderboard-table">
+          <thead>
+            <tr>
+              <th class="col-pos">POS</th>
+              <th class="col-car">CAR</th>
+              <th class="col-driver">DRIVER</th>
+              <th class="col-gap">GAP TO LEADER</th>
+              <th class="col-int">INTERVAL</th>
+              <th class="col-lap">LAST LAP</th>
+              <th class="col-best">BEST LAP</th>
+              <th class="col-stops">PITS</th>
+              <th class="col-status">STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- Driven dynamically by JavaScript -->
+            <tr>
+              <td colspan="9" class="no-data-msg">Initializing Timing & Telemetry Data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom Split Panels Grid -->
+      <div class="bottom-panels-grid">
+        <!-- Panel 1: Speech Log -->
+        <div class="speech-log-container" id="bottom-speech-log">
+          <div class="speech-log-header">
+            <span class="log-title">🎙️ Speech Commentary Log</span>
+            <button class="clear-log-btn" onclick="clearSpeechLog()">Clear</button>
+          </div>
+          <div class="speech-log-rows" id="speech-log-lines">
+            <div class="log-line system">Timing server connection established. Awaiting feed details...</div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Social & Race Control Briefs -->
+        <div class="speech-log-container" id="bottom-radio-briefs">
+          <div class="speech-log-header">
+            <span class="log-title">📡 Race Control & X Social Feed (@INDYCAR)</span>
+            <button class="clear-log-btn" onclick="clearRadioBriefs()">Clear</button>
+          </div>
+          <div class="speech-log-rows" id="radio-briefs-lines">
+            <div class="log-line system">Listening for Race Control transponders & team radio briefs...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Audio Beep Cues (Chroma Synthesized with Web Audio API, no local files needed!) -->
+  <script src="app.js"></script>
+</body>
+</html>
