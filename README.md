@@ -1,4 +1,4 @@
-# OvalTiming Live - IndyCar Streamer Dashboard
+# OvalTiming Live - IndyCar Dashboard
 
 A high-fidelity, stream-ready live timing and scoring dashboard optimized for NTT INDYCAR SERIES races. Features a Text-to-Speech (TTS) Race Commentator, a transparent OBS HUD Overlay, and a simulated 33-car oval race engine for offline testing.
 
