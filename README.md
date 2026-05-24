@@ -12,7 +12,7 @@ Hosts frontend statically and executes the CORS telemetry proxy as a Serverless 
 2. Run command: `vercel`
 3. Follow prompts. Use `vercel --prod` to deploy to production.
 
-### 2. Render.com (Supports Active Simulator)
+### 2. Supports Active Simulator
 Hosts the Node.js Express server (server.js) natively.
 1. Commit this folder to GitHub.
 2. Create a new Web Service on Render.
