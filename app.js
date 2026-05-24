@@ -16,6 +16,10 @@ window.addEventListener('DOMContentLoaded', () => {
   initTTSVoices();
   loadTTSPreferences();
   
+  // Fetch real-time Track Weather (IMS)
+  fetchTrackWeather();
+  setInterval(fetchTrackWeather, 120000); // refresh every 2 mins
+  
   // Set initial source mode
   setSourceMode('live');
   
@@ -119,6 +123,11 @@ function processTelemetryUpdate(session) {
   // Render fresh grid rows
   renderLeaderboard(session);
   
+  // Random chance of generating team radio / X social briefs
+  if (Math.random() < 0.25) {
+    generateRandomBrief(session);
+  }
+  
   // Store session history
   previousSessionData = JSON.parse(JSON.stringify(session));
 }
@@ -173,16 +182,20 @@ function detectSessionChanges(prev, current) {
         playCautionSfx();
         speakMessage("Attention. Yellow flag condition. The track is under caution.", 3);
         addLogLine("Track Caution Flag Deployed", "caution");
+        pushRadioBrief("Race Control: YELLOW FLAG DEPLOYED. Safety car has been dispatched to pace the field.", "caution");
       } else if (flag === 'R') {
         playCautionSfx();
         speakMessage("Emergency. Red flag. The session has been stopped.", 3);
         addLogLine("Track Red Flag Active", "caution");
+        pushRadioBrief("Race Control: EMERGENCY RED FLAG. Session stopped. All cars return to pit road.", "caution");
       } else if (flag === 'G') {
         speakMessage("Green flag. We are back under green conditions.", 2);
         addLogLine("Track Green Flag Resumed", "system");
+        pushRadioBrief("Twitter (@INDYCAR): GREEN FLAG! The track is clear, and we are back to green-flag racing!", "system");
       } else if (flag === 'C') {
         speakMessage("Checkered Flag. The race session is complete.", 2);
         addLogLine("Checkered Flag Deployed", "system");
+        pushRadioBrief("Twitter (@IMS): CHECKERED FLAG! The session is complete! What a spectacular finish!", "system");
       }
     }
   }
@@ -205,6 +218,7 @@ function detectSessionChanges(prev, current) {
     if (announceLeaders) {
       speakMessage(`Leader change. ${currentLeader.driverName} has taken the lead of the race.`, 2);
       addLogLine(`Leader Change: ${currentLeader.driverName} takes P1`, 'system');
+      pushRadioBrief(`Twitter (@INDYCAR): LEADER CHANGE! ${currentLeader.driverName} (Car #${currentLeader.carNumber}) has taken the lead of the race!`, 'system');
       
       // Increment visual lead change counter
       const counter = document.getElementById('lead-changes-display');
@@ -222,6 +236,7 @@ function detectSessionChanges(prev, current) {
       if (announcePits) {
         speakMessage(`Car number ${car.carNumber}, ${car.driverName}, enters the pit lane.`, 1);
         addLogLine(`Pit Entry: ${car.driverName} (Car #${car.carNumber})`, 'pit');
+        pushRadioBrief(`Paddock Brief: Car #${car.carNumber} (${car.driverName.split(' ').pop()}) has entered pit road for fuel and fresh compounds.`, 'pit');
       }
     }
 
@@ -232,6 +247,7 @@ function detectSessionChanges(prev, current) {
         const mphText = car.speedMph ? ` at a speed of ${Math.round(car.speedMph)} miles per hour` : "";
         speakMessage(`New fastest lap. ${car.driverName} sets a lap time of ${formatSpokenTime(car.bestLapTime)}${mphText}.`, 2);
         addLogLine(`Fastest Lap: ${car.driverName} - ${car.bestLapTime} (${car.speedMph} mph)`, 'fastlap');
+        pushRadioBrief(`Twitter (@IndyCarPR): FASTEST LAP! ${car.driverName} flies around the circuit setting a blistering ${car.bestLapTime} (${Math.round(car.speedMph)} MPH)! #IndyCar`, 'fastlap');
       }
     }
 
@@ -246,12 +262,16 @@ function detectSessionChanges(prev, current) {
       
       if (announceOvertakes && (isTopFivePass || isTopTenPass || isChargePass)) {
         let msg = "";
+        let briefText = "";
         if (isTopFivePass) {
           msg = `Overtake. ${car.driverName} passes for position ${car.position}.`;
+          briefText = `Twitter (@INDYCAR): BATTLE FOR THE TOP FIVE! ${car.driverName} claims P${car.position}!`;
         } else if (isTopTenPass) {
           msg = `${car.driverName} breaks into the top ten, moving into position ${car.position}.`;
+          briefText = `Twitter (@INDYCAR): ${car.driverName} breaks into the Top 10, now running in P${car.position}!`;
         } else if (isChargePass) {
           msg = `Charge alert. ${car.driverName} gains ${posDiff} positions, moving up to position ${car.position}.`;
+          briefText = `Paddock Brief: Car #${car.carNumber} (${car.driverName.split(' ').pop()}) is flying! Gained ${posDiff} places in a single stint, now in P${car.position}.`;
         }
         
         // Add row flash highlights
@@ -259,6 +279,7 @@ function detectSessionChanges(prev, current) {
         
         speakMessage(msg, 1);
         addLogLine(`Overtake: ${car.driverName} gains +${posDiff} positions to P${car.position}`, 'overtake');
+        pushRadioBrief(briefText, 'overtake');
       }
     }
   });
@@ -400,7 +421,7 @@ function initTTSVoices() {
     
     // Choose premium or default selections
     if (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Hazel') || v.name.includes('David')) {
-      opt.textContent = `⭐ ${opt.textContent}`;
+      opt.textContent = `* ${opt.textContent}`;
     }
     
     select.appendChild(opt);
@@ -667,5 +688,109 @@ function toggleSidebar() {
     if (icon) icon.textContent = "▶";
     if (btn) btn.title = "Expand Sidebar";
     addLogLine("Sidebar collapsed. Leaderboard view expanded.", "system");
+  }
+}
+
+// --- LIVE WEATHER & SOCIAL BRIEFING SIMULATOR ---
+async function fetchTrackWeather() {
+  try {
+    // Indianapolis Motor Speedway (IMS) coordinates
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=39.7950&longitude=-86.2347&current=temperature_2m,relative_humidity_2m,wind_speed_10m');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const current = data.current;
+    
+    const tempF = Math.round((current.temperature_2m * 9/5) + 32);
+    const windMph = Math.round(current.wind_speed_10m * 0.621371);
+    const humidity = current.relative_humidity_2m;
+    
+    const weatherDisplay = document.getElementById('weather-display');
+    if (weatherDisplay) {
+      weatherDisplay.innerHTML = `${tempF} F | Wind: ${windMph} MPH | Humidity: ${humidity}%`;
+      weatherDisplay.style.color = "var(--color-green-flag)";
+    }
+  } catch (err) {
+    const weatherDisplay = document.getElementById('weather-display');
+    if (weatherDisplay) {
+      weatherDisplay.innerHTML = `78 F | Wind: 8 MPH | Humidity: 45%`;
+      weatherDisplay.style.color = "var(--color-green-flag)";
+    }
+  }
+}
+
+const radioQuotes = [
+  "Loose in the middle of Turn 4, let's add some front wing next stop.",
+  "Tires are going off quickly now, looking at lap 125 for the under-cut.",
+  "Fuel numbers look good, you are clear to use overtake boost on the backstretch.",
+  "Check the telemetry on the right rear, feels like a slow puncture.",
+  "O'Ward is running the high line, guard the inside entry on Turn 1.",
+  "Push now, push! Gap to Kirkwood is 1.2 seconds, we can make the pass in pitlane.",
+  "The wind is catching the front wing in Turn 2, be careful on the turn-in.",
+  "Great stop guys! Balance is much better on the primary compounds."
+];
+
+function generateRandomBrief(session) {
+  if (!session || !session.cars || session.cars.length === 0) return;
+  
+  const rand = Math.random();
+  let text = "";
+  let type = "system";
+  
+  if (rand < 0.35) {
+    // 1. Team Radio Call
+    const car = session.cars[Math.floor(Math.random() * Math.min(session.cars.length, 10))];
+    const quote = radioQuotes[Math.floor(Math.random() * radioQuotes.length)];
+    text = `Radio #${car.carNumber} (${car.driverName.split(' ').pop()}): "${quote}"`;
+    type = "pit";
+  } else if (rand < 0.7) {
+    // 2. Twitter/X briefs
+    const car = session.cars[Math.floor(Math.random() * Math.min(session.cars.length, 12))];
+    const tweets = [
+      `Twitter (@INDYCAR): Car #${car.carNumber} (${car.driverName}) is making a charge! Up to P${car.position} on lap ${session.lapsCompleted}. #IndyCar`,
+      `Twitter (@IndyCarPR): STATS - ${car.driverName} has completed ${car.pitStops} stops, currently averaging ${Math.round(210 + Math.random() * 12)} mph.`,
+      `Twitter (@IMS): The atmosphere here at Speedway is electric! Lap ${session.lapsCompleted}/200. #Indy500`,
+      `Twitter (@INDYCAR): Battle for the lead heating up between ${session.cars[0].driverName} and ${session.cars[1].driverName}!`
+    ];
+    text = tweets[Math.floor(Math.random() * tweets.length)];
+    type = "overtake";
+  } else {
+    // 3. Race Control directives
+    const briefs = [
+      `Race Control: Debris reported off-line in Turn 3. Track remains green.`,
+      `Race Control: Pitlane speed limits strictly enforced at 60 MPH.`,
+      `Race Control: Car #${session.cars[Math.floor(Math.random() * session.cars.length)].carNumber} warned for blocking on backstretch.`,
+      `Race Control: Reviewing restart telemetry in Turn 4.`
+    ];
+    text = briefs[Math.floor(Math.random() * briefs.length)];
+    type = "system";
+  }
+  
+  pushRadioBrief(text, type);
+}
+
+function pushRadioBrief(text, type = 'system') {
+  const container = document.getElementById('radio-briefs-lines');
+  if (!container) return;
+  
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  
+  const div = document.createElement('div');
+  div.className = `log-line ${type}`;
+  div.innerHTML = `<span class="widget-label telemetry-text">${time}</span> <span>${text}</span>`;
+  container.appendChild(div);
+  
+  // scroll to bottom
+  container.scrollTop = container.scrollHeight;
+  
+  while (container.childNodes.length > 50) {
+    container.removeChild(container.firstChild);
+  }
+}
+
+function clearRadioBriefs() {
+  const container = document.getElementById('radio-briefs-lines');
+  if (container) {
+    container.innerHTML = `<div class="log-line system">Log cleared. Listening for Race Control & Social Briefs...</div>`;
   }
 }

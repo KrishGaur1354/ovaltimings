@@ -911,7 +911,7 @@ body.hud-mode .speech-log-container {
 
 /* Visual Disclaimer helper in HUD mode */
 body.hud-mode:before {
-  content: "🎥 OBS HUD ACTIVE - Press ESC to configure";
+  content: "OBS HUD ACTIVE - Press ESC to configure";
   position: fixed;
   bottom: 8px;
   right: 12px;
@@ -954,4 +954,17 @@ body.hud-mode:before {
 
 .sidebar-toggle-btn:focus {
   outline: none;
+}
+
+/* Bottom Split Grid for Speech & Race Radio */
+.bottom-panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-height: 200px;
+}
+
+/* Hide complete briefs block when in minimalist OBS HUD mode */
+body.hud-mode .bottom-panels-grid {
+  display: none !important;
 }

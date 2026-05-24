@@ -344,7 +344,7 @@ app.get('/api/timing', async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(`⚠️ timingscoring-ris.json query failed or empty. Trying standard timingscoring.json...`);
+    console.log(`WARNING: timingscoring-ris.json query failed or empty. Trying standard timingscoring.json...`);
   }
 
   // Pipeline Attempt 2: Fetch timingscoring.json
@@ -359,7 +359,7 @@ app.get('/api/timing', async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(`⚠️ timingscoring.json query failed too.`);
+    console.log(`WARNING: timingscoring.json query failed too.`);
   }
 
   // Pipeline Fallback: Serve our rich simulated race data
@@ -422,8 +422,8 @@ function formatLapTime(seconds) {
 
 app.listen(PORT, () => {
   console.log(`=============================================================`);
-  console.log(`🏎️  IndyCar Live timing dashboard proxy server running!`);
-  console.log(`🌍 URL: http://localhost:${PORT}`);
-  console.log(`🏁 Fallback simulator is active in case live API is offline.`);
+  console.log(`  IndyCar Live timing dashboard proxy server running!`);
+  console.log(`  URL: http://localhost:${PORT}`);
+  console.log(`  Fallback simulator is active in case live API is offline.`);
   console.log(`=============================================================`);
 });

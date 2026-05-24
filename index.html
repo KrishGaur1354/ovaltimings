@@ -20,7 +20,7 @@
     <header class="header-panel" id="main-header">
       <div class="brand-group">
         <button id="btn-toggle-sidebar" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse Sidebar">◀</button>
-        <div class="logo-accent">🏁</div>
+        <div class="logo-accent"></div>
         <div>
           <h1 id="app-title">OVALTIMING LIVE</h1>
           <p id="session-name-display" class="telemetry-text">CONNECTING TO TIMING SERVICE...</p>
@@ -40,7 +40,7 @@
       <div class="session-stats">
         <div class="stat-widget" id="weather-widget">
           <span class="widget-label">TRACK WEATHER (IMS)</span>
-          <span class="widget-value telemetry-text" id="weather-display" style="font-size: 15px; color: var(--color-green-flag);">☀️ Loading...</span>
+          <span class="widget-value telemetry-text" id="weather-display" style="font-size: 15px; color: var(--color-green-flag);">Loading...</span>
         </div>
         <div class="stat-widget">
           <span class="widget-label">LAP</span>
@@ -62,7 +62,7 @@
       
       <!-- 1. FEED MODE SELECTION -->
       <div class="panel-section">
-        <h3>⚡ Telemetry Source</h3>
+        <h3>Telemetry Source</h3>
         <div class="button-row">
           <button id="btn-mode-live" class="mode-btn active" onclick="setSourceMode('live')">
             <span class="btn-dot live-dot"></span> Live IndyCar Feed
@@ -85,7 +85,7 @@
       <!-- 2. TEXT-TO-SPEECH CONTROLLER -->
       <div class="panel-section">
         <div class="section-title-row">
-          <h3>🎙️ Speech Commentary</h3>
+          <h3>Speech Commentary</h3>
           <label class="switch-container">
             <input type="checkbox" id="tts-master-enable" checked onchange="toggleTTSMaster()">
             <span class="slider"></span>
@@ -151,13 +151,13 @@
             </label>
           </div>
           
-          <button id="btn-test-speech" class="action-btn outline-btn" onclick="testTTS()">🔊 Test Sound & Speech</button>
+          <button id="btn-test-speech" class="action-btn outline-btn" onclick="testTTS()">Test Sound & Speech</button>
         </div>
       </div>
 
       <!-- 3. OBS OVERLAY SETTINGS -->
       <div class="panel-section">
-        <h3>📺 Streamer Overlay</h3>
+        <h3>Streamer Overlay</h3>
         
         <label class="checkbox-row" style="margin-bottom: 6px;">
           <input type="checkbox" id="chk-limit-top20" checked onchange="toggleLimitTop20()">
@@ -166,7 +166,7 @@
         </label>
 
         <button id="btn-toggle-hud" class="action-btn accent-btn" onclick="toggleHUDMode()">
-          🎥 Toggle OBS Overlay Mode
+          Toggle OBS Overlay Mode
         </button>
         <p class="section-hint">Hides configuration panels and presents a minimalist browser transparent tower. Press <strong>ESCAPE</strong> key at any time to exit overlay mode.</p>
       </div>
@@ -209,7 +209,7 @@
         <!-- Panel 1: Speech Log -->
         <div class="speech-log-container" id="bottom-speech-log">
           <div class="speech-log-header">
-            <span class="log-title">🎙️ Speech Commentary Log</span>
+            <span class="log-title">Speech Commentary Log</span>
             <button class="clear-log-btn" onclick="clearSpeechLog()">Clear</button>
           </div>
           <div class="speech-log-rows" id="speech-log-lines">
@@ -220,7 +220,7 @@
         <!-- Panel 2: Social & Race Control Briefs -->
         <div class="speech-log-container" id="bottom-radio-briefs">
           <div class="speech-log-header">
-            <span class="log-title">📡 Race Control & X Social Feed (@INDYCAR)</span>
+            <span class="log-title">Race Control & X Social Feed (@INDYCAR)</span>
             <button class="clear-log-btn" onclick="clearRadioBriefs()">Clear</button>
           </div>
           <div class="speech-log-rows" id="radio-briefs-lines">
